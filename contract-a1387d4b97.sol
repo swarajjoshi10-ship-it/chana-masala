@@ -5,69 +5,46 @@ contract NGO {
     address public owner;
     bool public paused;
 
+    struct Milestone {
+        string description;
+        uint256 amount;
+        address payable vendor; // LINKED: The specific vendor for this task
+        bool approved;
+        bool paid;
+    }
+
+    struct Vendor {
+        string name;
+        string category; 
+        bool isVerified;
+    }
+
+    Milestone[] public milestones;
+    uint256 public nextMilestoneId; // Incremented for frontend visibility
+    mapping(address => Vendor) public vendorRegistry;
+
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the contract owner");
         _;
     }
 
-    modifier whenNotPaused() {
-        require(!paused, "Contract is currently paused");
-        _;
-    }
-
     constructor(address _initialOwner) {
-    
         require(_initialOwner != address(0), "Owner address cannot be zero");
         owner = _initialOwner;
-        paused = false;
     }
-
 
     receive() external payable {}
-    fallback() external payable {}
 
-    function pause() public onlyOwner {
-        paused = true;
+    // 1. REGISTER: Add vendor to the system first
+    function registerVendor(address _vAddr, string memory _name, string memory _cat) public onlyOwner {
+        vendorRegistry[_vAddr] = Vendor(_name, _cat, true);
     }
 
-    function unpause() public onlyOwner {
-        paused = false;
-    }
-
-    function transferOwnership(address _newOwner) public onlyOwner {
-        require(_newOwner != address(0), "Invalid address");
-        owner = _newOwner;
-    }
-
-
-    function donate() public payable whenNotPaused {
-        require(msg.value > 0, "Donation must be greater than 0");
-    }
-
-    function releaseFunds(address payable _to, uint256 _amount) public onlyOwner {
-        require(address(this).balance >= _amount, "Insufficient balance");
-        (bool success, ) = _to.call{value: _amount}("");
-        require(success, "Transfer failed.");
-    }
-
-    function getBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
-
-    struct Milestone {
-        string description;
-        uint256 amount;
-        bool approved;
-        bool paid;
-    }
-
-    Milestone[] public milestones;
-    uint256 public nextMilestoneId;
-
-    
-    function addMilestone(string memory _description, uint256 _amount) public onlyOwner {
-        milestones.push(Milestone(_description, _amount, false, false));
+    // 2. CREATE: Assign a verified vendor to a specific task
+    function addMilestone(string memory _description, uint256 _amount, address payable _vendor) public onlyOwner {
+        require(vendorRegistry[_vendor].isVerified, "Vendor is not verified in our registry");
+        milestones.push(Milestone(_description, _amount, _vendor, false, false));
+        nextMilestoneId++; // Now the frontend can see the new count
     }
 
     function approveMilestone(uint256 _id) public onlyOwner {
@@ -75,17 +52,20 @@ contract NGO {
         milestones[_id].approved = true;
     }
 
-    
-    function releaseMilestone(uint256 _id, address payable _ngo) public onlyOwner {
+    // 3. RELEASE: Sends money ONLY to the vendor pre-assigned in step 2
+    function releaseMilestone(uint256 _id) public onlyOwner {
         Milestone storage m = milestones[_id];
         require(m.approved, "Milestone not yet approved");
         require(!m.paid, "Milestone already paid");
-        require(address(this).balance >= m.amount, "Insufficient balance in escrow");
+        require(address(this).balance >= m.amount, "Insufficient balance");
 
         m.paid = true;
-        (bool success, ) = _ngo.call{value: m.amount}("");
+        // Money is sent to m.vendor, not a manual address input
+        (bool success, ) = m.vendor.call{value: m.amount}("");
         require(success, "Transfer failed.");
     }
 
-
-} 
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+}
