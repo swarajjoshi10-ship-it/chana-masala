@@ -10,8 +10,9 @@ contract NGO {
         uint256 totalAmount;
         address payable vendor;
         string imageProofHash; 
-        bool isInitialPaid;    // Track if first 50% is sent
-        bool isFinalPaid;      // Track if remaining 50% is sent
+        bool isInitialPaid;    
+        bool isFinalPaid;      
+        bool proofSubmitted;   // FIX: Lock to prevent overwriting proof
     }
 
     struct Vendor {
@@ -40,8 +41,15 @@ contract NGO {
 
     receive() external payable {}
 
+    // FIX: Prevent overwriting existing vendors to maintain audit history
     function registerVendor(address _vAddr, string memory _name, string memory _cat) public onlyOwner {
+        require(!vendorRegistry[_vAddr].isVerified, "Vendor already verified or exists");
         vendorRegistry[_vAddr] = Vendor(_name, _cat, true);
+    }
+
+    // NEW: Ability to revoke trust if fraud is discovered
+    function revokeVendor(address _vAddr) public onlyOwner {
+        vendorRegistry[_vAddr].isVerified = false;
     }
 
     function addMilestone(string memory _description, uint256 _amount, address payable _vendor) public onlyOwner {
@@ -52,18 +60,19 @@ contract NGO {
             vendor: _vendor,
             imageProofHash: "",
             isInitialPaid: false,
-            isFinalPaid: false
+            isFinalPaid: false,
+            proofSubmitted: false
         }));
         nextMilestoneId++; 
     }
 
-    // --- NEW 50% LOGIC ---
-
     /**
-     * @dev Step 1: Release first 50% to the vendor to start the work.
+     * @dev Step 1: Release first 50%. Enforces live verification check.
      */
     function releaseInitial50Percent(uint256 _id) public onlyOwner {
         Milestone storage m = milestones[_id];
+        // FIX: Re-verify vendor status at the time of payment
+        require(vendorRegistry[m.vendor].isVerified, "Vendor is no longer verified");
         require(!m.isInitialPaid, "Initial payment already made");
         
         uint256 half = m.totalAmount / 2;
@@ -76,23 +85,32 @@ contract NGO {
         emit InitialPaymentReleased(_id, m.vendor, half);
     }
 
-   
+    /**
+     * @dev Step 2: Vendor submits proof. Once submitted, it cannot be changed.
+     */
     function submitProof(uint256 _id, string memory _ipfsHash) public {
         Milestone storage m = milestones[_id];
         require(msg.sender == m.vendor, "Only the assigned vendor can submit proof");
         require(m.isInitialPaid, "Must receive initial payment first");
+        // FIX: Prevent overwriting the evidence trail
+        require(!m.proofSubmitted, "Proof has already been submitted and locked");
         
         m.imageProofHash = _ipfsHash;
+        m.proofSubmitted = true;
         emit ProofSubmitted(_id, _ipfsHash);
     }
 
+    /**
+     * @dev Step 3: Release final 50%. Enforces live verification and proof check.
+     */
     function releaseFinal50Percent(uint256 _id) public onlyOwner {
         Milestone storage m = milestones[_id];
+        // FIX: Re-verify vendor status again before final payout
+        require(vendorRegistry[m.vendor].isVerified, "Vendor is no longer verified");
         require(m.isInitialPaid, "Initial payment not yet made");
         require(!m.isFinalPaid, "Final payment already made");
-        require(bytes(m.imageProofHash).length > 0, "No proof submitted yet");
+        require(m.proofSubmitted, "No proof submitted yet");
 
-        // Use subtraction to handle odd numbers (e.g., if total is 11, half is 5, remaining is 6)
         uint256 remaining = m.totalAmount - (m.totalAmount / 2);
         require(address(this).balance >= remaining, "Insufficient balance");
 
