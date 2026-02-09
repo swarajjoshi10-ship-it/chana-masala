@@ -53,4 +53,39 @@ contract NGO {
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
-}
+
+
+    struct Milestone {
+        string description;
+        uint256 amount;
+        bool approved;
+        bool paid;
+    }
+
+    Milestone[] public milestones;
+    uint256 public nextMilestoneId;
+
+    
+    function addMilestone(string memory _description, uint256 _amount) public onlyOwner {
+        milestones.push(Milestone(_description, _amount, false, false));
+    }
+
+    function approveMilestone(uint256 _id) public onlyOwner {
+        require(_id < milestones.length, "Invalid milestone ID");
+        milestones[_id].approved = true;
+    }
+
+    
+    function releaseMilestone(uint256 _id, address payable _ngo) public onlyOwner {
+        Milestone storage m = milestones[_id];
+        require(m.approved, "Milestone not yet approved");
+        require(!m.paid, "Milestone already paid");
+        require(address(this).balance >= m.amount, "Insufficient balance in escrow");
+
+        m.paid = true;
+        (bool success, ) = _ngo.call{value: m.amount}("");
+        require(success, "Transfer failed.");
+    }
+
+
+} 
