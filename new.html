@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Giving Hub | Secure NGO Donations</title>
+    <style>
+        :root {
+            --ngo-red: #e32b26;
+            --ngo-dark: #222222;
+            --bg-light: #f4f7f6;
+            --white: #ffffff;
+            --border-gray: #e2e8f0;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            margin: 0; 
+            background-color: var(--bg-light); 
+            color: var(--ngo-dark);
+        }
+
+        header {
+            background: var(--white);
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo { font-weight: 800; color: var(--ngo-red); font-size: 1.4rem; cursor: pointer; }
+
+        /* HOME SCREEN */
+        #homeScreen { padding: 50px 5%; max-width: 1200px; margin: 0 auto; }
+        .hero-title { text-align: center; margin-bottom: 40px; }
+        .ngo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+
+        .ngo-card {
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: 0.3s;
+            cursor: pointer;
+            border: 1px solid var(--border-gray);
+        }
+        .ngo-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.1); }
+        .ngo-card img { width: 100%; height: 200px; object-fit: cover; }
+        .ngo-card-body { padding: 20px; }
+
+        /* PORTAL SCREEN */
+        #portalScreen { display: none; padding: 40px 5%; animation: fadeIn 0.4s; }
+        .portal-layout { max-width: 1100px; margin: 0 auto; display: flex; gap: 40px; flex-wrap: wrap; }
+        .content-section { flex: 1; min-width: 320px; }
+        .portal-img { width: 100%; border-radius: 12px; margin-bottom: 20px; max-height: 400px; object-fit: cover; }
+
+        .donation-card {
+            flex: 0 0 400px;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border-top: 6px solid var(--ngo-red);
+        }
+
+        .balance-box { background: #fff5f5; border: 1px solid #fed7d7; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; }
+        #contractBalance { font-size: 1.8rem; font-weight: 800; color: var(--ngo-red); }
+        
+        input[type="number"] { width: 100%; padding: 12px; border: 1px solid var(--border-gray); border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-red { background: var(--ngo-red); color: white; }
+        .btn-dark { background: var(--ngo-dark); color: white; margin-bottom: 15px; }
+        button:disabled { background: #cbd5e1 !important; cursor: not-allowed; }
+        
+        .status { margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 6px; font-size: 0.85rem; text-align: center; min-height: 20px;}
+        .back-btn { margin-bottom: 20px; cursor: pointer; color: var(--ngo-red); font-weight: bold; display: inline-block; border: 1px solid var(--ngo-red); padding: 5px 15px; border-radius: 20px;}
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo" onclick="showHome()">Global Relief Hub</div>
+</header>
+
+<section id="homeScreen">
+    <div class="hero-title">
+        <h1>Support a Cause</h1>
+        <p>Select an organization to begin your secure blockchain donation.</p>
+    </div>
+    <div class="ngo-grid">
+        <div class="ngo-card" onclick="openPortal('Children Funds Support', 'Helping children get a happy childhood and a bright future since 2004.', 'child.jpg')">
+            <img src="child.jpg" alt="NGO 1">
+            <div class="ngo-card-body"><h3>Children Funds Support</h3><p>Child welfare and education specialists across India.</p></div>
+        </div>
+        <div class="ngo-card" onclick="openPortal('Save Environment', 'Dedicated to environmental conservation and reforestation.', 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600')">
+            <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600" alt="NGO 2">
+            <div class="ngo-card-body"><h3>EcoProtect</h3><p>Sustainable living and environmental protection projects.</p></div>
+        </div>
+        <div class="ngo-card" onclick="openPortal('Healthcare Relief', 'Providing healthcare and emergency medical aid.', 'health.jpg')">
+            <img src="health.jpg" alt="NGO 3">
+            <div class="ngo-card-body"><h3>Healthcare Relief</h3><p>Medical supplies and professional care for underserved regions.</p></div>
+        </div>
+    </div>
+</section>
+
+<section id="portalScreen">
+    <div class="back-btn" onclick="showHome()">← Back to List</div>
+    <div class="portal-layout">
+        <div class="content-section">
+            <img id="portalImg" src="" class="portal-img">
+            <h1 id="portalName"></h1>
+            <p id="portalDesc"></p>
+        </div>
+
+        <div class="donation-card">
+            <div id="connectionArea">
+                <button id="connectBtn" class="btn-dark">CONNECT WALLET TO DONATE</button>
+            </div>
+            
+            <div id="donationArea" class="hidden">
+                <div id="walletDisplay" style="font-size: 0.8rem; text-align: center; background: #eee; padding: 5px; border-radius: 5px; margin-bottom: 10px;"></div>
+                <div class="balance-box">
+                    <div style="font-size: 0.7rem; color: #718096;">TOTAL RAISED BY THIS NGO</div>
+                    <div id="contractBalance">0 ETH</div>
+                </div>
+                <input type="number" id="donateAmount" placeholder="Amount in ETH" step="0.01">
+                <button id="donateBtn" class="btn-red">DONATE NOW</button>
+            </div>
+            <div class="status" id="status">Please connect your wallet</div>
+        </div>
+    </div>
+</section>
+
+<script type="module">
+    import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+
+ 
+    const contractAddress = "0x33402eEb6ab38FfBf4AEC477597c2E174727ca5F";
+    const contractABI = [
+        { "inputs": [], "name": "donate", "outputs": [], "stateMutability": "payable", "type": "function" },
+        { "inputs": [], "name": "getBalance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+    ];
+
+    let provider, signer, contract;
+
+    
+    window.openPortal = async (name, desc, img) => {
+        document.getElementById('homeScreen').style.display = 'none';
+        document.getElementById('portalScreen').style.display = 'block';
+        document.getElementById('portalName').innerText = name;
+        document.getElementById('portalDesc').innerText = desc;
+        document.getElementById('portalImg').src = img;
+        
+        
+        if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum);
+            const accounts = await provider.listAccounts();
+            if (accounts.length > 0) {
+                setupWeb3();
+            }
+        }
+    };
+
+    window.showHome = () => {
+        document.getElementById('homeScreen').style.display = 'block';
+        document.getElementById('portalScreen').style.display = 'none';
+    };
+
+  
+    async function setupWeb3() {
+        try {
+            provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+            
+            const address = await signer.getAddress();
+            document.getElementById('walletDisplay').innerText = `Active: ${address.substring(0,6)}...${address.substring(38)}`;
+            
+            document.getElementById('connectionArea').classList.add('hidden');
+            document.getElementById('donationArea').classList.remove('hidden');
+            document.getElementById('status').innerText = "Wallet Ready";
+            
+            updateBalance();
+        } catch (err) {
+            console.error(err);
+            document.getElementById('status').innerText = "Error connecting Web3";
+        }
+    }
+
+    async function updateBalance() {
+        if (!contract) return;
+        try {
+            const balanceWei = await provider.getBalance(contractAddress);
+            document.getElementById('contractBalance').innerText = `${ethers.formatEther(balanceWei)} ETH`;
+        } catch (err) {
+            console.error("Balance Check Error:", err);
+        }
+    }
+
+    async function handleDonation() {
+        const amount = document.getElementById('donateAmount').value;
+        if (!amount || amount <= 0) return alert("Please enter a valid ETH amount");
+
+        try {
+            document.getElementById('status').innerText = "Confirming in MetaMask...";
+            const tx = await contract.donate({ value: ethers.parseEther(amount) });
+            
+            document.getElementById('status').innerText = "Transaction Mining...";
+            await tx.wait();
+            
+            document.getElementById('status').innerText = "Donation Successful! Thank you.";
+            updateBalance();
+            document.getElementById('donateAmount').value = "";
+        } catch (err) {
+            console.error(err);
+            document.getElementById('status').innerText = "Transaction Failed or Cancelled";
+        }
+    }
+
+  
+    document.getElementById('connectBtn').onclick = async () => {
+        if (window.ethereum) {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            setupWeb3();
+        } else {
+            alert("Please install MetaMask");
+        }
+    };
+
+    document.getElementById('donateBtn').onclick = handleDonation;
+
+  
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', () => window.location.reload());
+    }
+</script>
+</body>
+</html>

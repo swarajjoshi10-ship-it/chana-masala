@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Education Fund - NGO Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f0f2f5; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 380px; text-align: center; overflow: hidden; }
+        .hero-img { width: 100%; height: 180px; object-fit: cover; border-bottom: 5px solid #2563eb; }
+        .content { padding: 2rem; }
+        .balance-box { background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0; }
+        #contractBalance { font-weight: bold; color: #2563eb; font-size: 1.2rem; }
+        button { width: 100%; padding: 12px; margin-top: 10px; cursor: pointer; border: none; border-radius: 8px; font-weight: 600; }
+        .btn-connect { background: #10b981; color: white; }
+        .btn-donate { background: #2563eb; color: white; }
+        .btn-donate:disabled { background: #cbd5e1; cursor: not-allowed; }
+        input { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        .status { margin-top: 20px; font-size: 0.85rem; color: #475569; }
+        .nav-link { display: block; margin-top: 15px; color: #64748b; text-decoration: none; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <img src="child.jpg" alt="Education" class="hero-img">
+    <div class="content">
+        <h2>Education Fund</h2>
+        <p>Helping children access quality learning tools and a brighter future.</p>
+        <button id="connectBtn" class="btn-connect" onclick="connect()">Connect Wallet</button>
+        <div class="balance-box">
+            <p style="margin:0; font-size: 0.8rem;">Current Pool</p>
+            <div id="contractBalance">0 ETH</div>
+        </div>
+        <input type="number" id="donateAmount" placeholder="ETH Amount" step="0.01">
+        <button id="donateBtn" class="btn-donate" onclick="donate()" disabled>Donate Now</button>
+        <div class="status" id="status">Status: Wallet Disconnected</div>
+        <a href="index.html" class="nav-link">← Back to Hub</a>
+    </div>
+</div>
+
+<script type="module">
+    import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+    const contractAddress = "0x33402eEb6ab38FfBf4AEC477597c2E174727ca5F";
+    const contractABI = [{ "inputs": [], "name": "donate", "outputs": [], "stateMutability": "payable", "type": "function" }];
+    let signer, contract, provider;
+    window.connect = async () => {
+        if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = await provider.getSigner();
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+            document.getElementById('connectBtn').style.display = 'none';
+            document.getElementById('donateBtn').disabled = false;
+            document.getElementById('status').innerText = "Status: Connected";
+            const balance = await provider.getBalance(contractAddress);
+            document.getElementById('contractBalance').innerText = `${ethers.formatEther(balance)} ETH`;
+        }
+    };
+    window.donate = async () => {
+        const amount = document.getElementById('donateAmount').value;
+        try {
+            const tx = await contract.donate({ value: ethers.parseEther(amount) });
+            await tx.wait();
+            location.reload();
+        } catch (e) { alert("Error"); }
+    };
+</script>
+</body>
+</html>
